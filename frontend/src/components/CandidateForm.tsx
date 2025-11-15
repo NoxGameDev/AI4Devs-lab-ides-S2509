@@ -182,23 +182,22 @@ const CandidateForm: React.FC<CandidateFormProps> = ({ onSuccess, onCancel }) =>
     setIsSubmitting(true);
 
     try {
-      // For now, send JSON (file upload will be handled in ticket 2)
-      const payload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        education: formData.education,
-        workExperience: formData.workExperience,
-      };
+      // Send FormData with file upload support
+      const formDataToSend = new FormData();
+      formDataToSend.append('firstName', formData.firstName);
+      formDataToSend.append('lastName', formData.lastName);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('phone', formData.phone);
+      formDataToSend.append('address', formData.address);
+      formDataToSend.append('education', formData.education);
+      formDataToSend.append('workExperience', formData.workExperience);
+      if (formData.resume) {
+        formDataToSend.append('resume', formData.resume);
+      }
 
       const response = await fetch('http://localhost:3010/api/candidates', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        body: formDataToSend,
       });
 
       if (response.ok) {

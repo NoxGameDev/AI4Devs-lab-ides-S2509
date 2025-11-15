@@ -196,3 +196,100 @@ Successfully implemented a complete candidate registration form UI with validati
 - Form includes comprehensive validation on both client and server sides
 - Design system aligns with specified visual criteria for modern, community-focused interface
 
+---
+
+## Entry 3 - Ticket 2: Backend Candidate Registration Processing (November 15, 2025)
+
+### Request
+Implement backend functionality to process and store candidate information with resume file upload support (Ticket 2).
+
+### Summary
+Successfully implemented backend file upload handling using multer, updated the candidate registration endpoint to accept multipart/form-data, and integrated file storage. However, PDF upload functionality encountered issues during testing. Candidate registration without files works correctly.
+
+### Tasks Completed
+
+1. **File Upload Configuration**
+   - Created `backend/src/multerConfig.ts` for multer configuration
+   - Configured disk storage with unique filename generation (timestamp-random.extension)
+   - Set up file validation for PDF and DOCX files only (MIME type and extension checks)
+   - Implemented 5MB file size limit
+   - Automatic uploads directory creation at runtime
+
+2. **Backend API Endpoint Updates**
+   - **Updated POST /api/candidates** endpoint
+     - Changed from JSON to multipart/form-data handling using multer middleware
+     - Integrated file upload processing with `upload.single('resume')`
+     - Added file cleanup on validation errors or processing failures
+     - Enhanced error handling for file-related errors (invalid type, size limits)
+   - **Added GET /api/candidates** endpoint
+     - Retrieves all candidates ordered by creation date
+     - Returns candidate list with count for verification and testing
+
+3. **File Storage Implementation**
+   - Files stored in `/app/uploads/resumes/` directory
+   - Unique filename generation to prevent overwrites
+   - Resume path stored in database (`resumePath` field)
+   - Persistent volume (`backend_uploads`) configured in docker-compose.yml
+   - Uploads directory created in Dockerfile
+
+4. **Frontend Integration**
+   - Updated `CandidateForm.tsx` to send FormData instead of JSON
+   - File upload now fully integrated with backend endpoint
+   - Form sends all fields including resume file when provided
+
+5. **Dependencies and Configuration**
+   - Added `multer@^2.0.1` to backend dependencies (upgraded from 1.x for security)
+   - Added `@types/multer` to devDependencies
+   - Updated package-lock.json
+
+6. **Docker Configuration**
+   - Updated Dockerfile to create uploads directory structure
+   - Added `backend_uploads` volume to docker-compose.yml for persistent file storage
+   - Configured volume mapping: `backend_uploads:/app/uploads`
+
+### Key Technical Challenges Resolved
+
+- **Multer Integration**: Successfully integrated multer v2.0.1 for handling multipart/form-data requests. Solution: Configured multer with disk storage, file filtering, and size limits.
+- **File Validation**: Implemented dual validation (MIME type and file extension) to ensure only PDF and DOCX files are accepted. Solution: Combined `file.mimetype` check with `path.extname()` validation.
+- **File Cleanup on Errors**: Implemented automatic cleanup of uploaded files when validation or processing fails. Solution: Added fs.unlinkSync() in error handlers to prevent orphaned files.
+- **TypeScript Import**: Fixed fs module import to use ES6 import syntax instead of require(). Solution: Changed to `import fs from 'fs'` at top of file.
+
+### Known Issues
+
+⚠️ **PDF Upload Failure**: During testing, PDF file uploads failed. The candidate registration works correctly without files (tested successfully with candidate: Alejandro Anguizola), but when attempting to upload a PDF resume, the upload process encounters errors. This issue needs further investigation to identify the root cause (potentially multer configuration, MIME type detection, or file processing issue).
+
+### Final Status
+✅ Completed:
+- API endpoint receives all required candidate fields (tested and verified)
+- Email format validated on backend
+- Required fields validated on backend
+- Candidate data stored in database (verified with test candidate)
+- Success response returned upon successful registration
+- Clear error messages returned for validation failures
+- File upload infrastructure in place (multer configured, storage setup)
+
+⚠️ Partially Working:
+- Resume file storage: Infrastructure complete, but PDF uploads failing during testing
+- File validation: Logic implemented, but encountering issues with PDF files specifically
+
+### Files Created/Modified
+- `backend/src/multerConfig.ts` (created - multer configuration and file validation)
+- `backend/src/index.ts` (modified - added file upload handling and GET endpoint)
+- `backend/package.json` (modified - added multer and @types/multer)
+- `backend/package-lock.json` (modified - updated dependencies)
+- `backend/Dockerfile` (modified - added uploads directory creation)
+- `docker-compose.yml` (modified - added backend_uploads volume)
+- `frontend/src/components/CandidateForm.tsx` (modified - updated to send FormData)
+
+### Test Results
+- ✅ Candidate registration without file: **SUCCESS** (verified with test candidate)
+- ✅ Database storage: **SUCCESS** (candidate stored correctly)
+- ⚠️ PDF file upload: **FAILED** (needs investigation)
+- ⚠️ DOCX file upload: **NOT TESTED** (pending PDF fix)
+
+### Next Steps
+1. Investigate PDF upload failure - check multer logs, MIME type detection, and file processing
+2. Test DOCX upload once PDF issue is resolved
+3. Verify file persistence across container restarts
+4. Consider adding file serving endpoint to retrieve uploaded resumes
+

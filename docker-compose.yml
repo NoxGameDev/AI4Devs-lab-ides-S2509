@@ -26,6 +26,8 @@ services:
     environment:
       DATABASE_URL: postgresql://LTIdbUser:D1ymf8wyQEGthFR1E9xhCq@db:5432/LTIdb
       NODE_ENV: production
+    volumes:
+      - backend_uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -48,3 +50,4 @@ services:
 
 volumes:
   postgres_data:
+  backend_uploads:

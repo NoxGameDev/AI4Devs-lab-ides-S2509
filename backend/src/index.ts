@@ -3,6 +3,9 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
+import { upload, uploadsDir } from './multerConfig';
 
 dotenv.config();
 const prisma = new PrismaClient();
@@ -19,6 +22,19 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
   res.send('Hola LTI!');
+});
+
+// Get all candidates
+app.get('/api/candidates', async (req, res) => {
+  try {
+    const candidates = await prisma.candidate.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ candidates, count: candidates.length });
+  } catch (error) {
+    console.error('Error fetching candidates:', error);
+    res.status(500).json({ error: 'Failed to fetch candidates' });
+  }
 });
 
 // Get autocomplete suggestions for education and work experience
@@ -72,32 +88,58 @@ app.get('/api/candidates/autocomplete/:field', async (req, res) => {
   }
 });
 
-// Basic candidate registration endpoint (full implementation in ticket 2)
-app.post('/api/candidates', async (req, res) => {
+// Candidate registration endpoint with file upload support
+app.post('/api/candidates', upload.single('resume'), async (req, res) => {
   try {
+    // Extract form data from request body
     const { firstName, lastName, email, phone, address, education, workExperience } = req.body;
+    const resumeFile = req.file;
 
-    // Basic validation
+    // Validate required fields
     if (!firstName || !lastName || !email || !phone || !address || !education || !workExperience) {
+      // If validation fails and a file was uploaded, clean it up
+      if (resumeFile) {
+        try {
+          fs.unlinkSync(resumeFile.path);
+        } catch (unlinkError) {
+          console.error('Error deleting uploaded file:', unlinkError);
+        }
+      }
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Email validation
+    // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      // Clean up uploaded file if email is invalid
+      if (resumeFile) {
+        try {
+          fs.unlinkSync(resumeFile.path);
+        } catch (unlinkError) {
+          console.error('Error deleting uploaded file:', unlinkError);
+        }
+      }
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Create candidate (resume handling will be added in ticket 2)
+    // Build resume path if file was uploaded
+    let resumePath: string | undefined = undefined;
+    if (resumeFile) {
+      // Store relative path from uploads directory
+      resumePath = path.join('resumes', resumeFile.filename);
+    }
+
+    // Create candidate with resume path
     const candidate = await prisma.candidate.create({
       data: {
-        firstName,
-        lastName,
-        email,
-        phone,
-        address,
-        education,
-        workExperience,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        address: address.trim(),
+        education: education.trim(),
+        workExperience: workExperience.trim(),
+        resumePath,
       },
     });
 
@@ -106,9 +148,22 @@ app.post('/api/candidates', async (req, res) => {
       candidate 
     });
   } catch (error: any) {
+    // Clean up uploaded file on error
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting uploaded file:', unlinkError);
+      }
+    }
+
     console.error('Candidate creation error:', error);
     if (error.code === 'P2002') {
       res.status(400).json({ error: 'A candidate with this email already exists' });
+    } else if (error.message && error.message.includes('Invalid file type')) {
+      res.status(400).json({ error: error.message });
+    } else if (error.code === 'LIMIT_FILE_SIZE') {
+      res.status(400).json({ error: 'File size exceeds the 5MB limit' });
     } else {
       res.status(500).json({ error: 'Failed to add candidate' });
     }
