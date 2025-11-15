@@ -51,7 +51,8 @@ const CandidateForm: React.FC<CandidateFormProps> = ({ onSuccess, onCancel }) =>
     const fetchEducationSuggestions = async () => {
       if (formData.education.trim().length > 0) {
         try {
-          const response = await fetch(
+          const { authenticatedFetch } = await import('../services/authService');
+          const response = await authenticatedFetch(
             `http://localhost:3010/api/candidates/autocomplete/education?q=${encodeURIComponent(formData.education)}`
           );
           if (response.ok) {
@@ -71,7 +72,8 @@ const CandidateForm: React.FC<CandidateFormProps> = ({ onSuccess, onCancel }) =>
     const fetchExperienceSuggestions = async () => {
       if (formData.workExperience.trim().length > 0) {
         try {
-          const response = await fetch(
+          const { authenticatedFetch } = await import('../services/authService');
+          const response = await authenticatedFetch(
             `http://localhost:3010/api/candidates/autocomplete/workExperience?q=${encodeURIComponent(formData.workExperience)}`
           );
           if (response.ok) {
@@ -195,16 +197,31 @@ const CandidateForm: React.FC<CandidateFormProps> = ({ onSuccess, onCancel }) =>
         formDataToSend.append('resume', formData.resume);
       }
 
-      const response = await fetch('http://localhost:3010/api/candidates', {
+      const { authenticatedFetch } = await import('../services/authService');
+      const response = await authenticatedFetch('http://localhost:3010/api/candidates', {
         method: 'POST',
         body: formDataToSend,
       });
 
       if (response.ok) {
+        // Clear form data on success
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          address: '',
+          education: '',
+          workExperience: '',
+          resume: null,
+        });
+        setErrors({});
+        
+        // Show success message briefly, then close form
         setSubmitMessage({ type: 'success', text: 'Candidate added successfully!' });
         setTimeout(() => {
           onSuccess();
-        }, 1500);
+        }, 1000);
       } else {
         const errorData = await response.json();
         setSubmitMessage({ 

@@ -14,9 +14,13 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  password  String   // Hashed password
+  role      String   @default("recruiter") // recruiter, admin, etc.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Candidate {

@@ -3,10 +3,20 @@ import path from 'path';
 import { Request } from 'express';
 import fs from 'fs';
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists with secure permissions
 const uploadsDir = path.join(__dirname, '../uploads/resumes');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  fs.mkdirSync(uploadsDir, { 
+    recursive: true,
+    mode: 0o700 // Only owner can read, write, execute (rwx------)
+  });
+} else {
+  // Ensure existing directory has correct permissions
+  try {
+    fs.chmodSync(uploadsDir, 0o700);
+  } catch (error) {
+    console.warn('Could not set permissions on uploads directory:', error);
+  }
 }
 
 // Configure storage
@@ -16,9 +26,25 @@ const storage = multer.diskStorage({
   },
   filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
     // Generate unique filename: timestamp-random-originalname
+    // Remove any path separators from original filename to prevent directory traversal
+    const sanitizedOriginal = path.basename(file.originalname);
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${ext}`);
+    const ext = path.extname(sanitizedOriginal);
+    const filename = `${uniqueSuffix}${ext}`;
+    
+    // Set secure file permissions (read/write for owner only)
+    setTimeout(() => {
+      const filePath = path.join(uploadsDir, filename);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.chmodSync(filePath, 0o600); // Only owner can read/write (rw-------)
+        } catch (error) {
+          console.warn('Could not set permissions on uploaded file:', error);
+        }
+      }
+    }, 100);
+    
+    cb(null, filename);
   },
 });
 

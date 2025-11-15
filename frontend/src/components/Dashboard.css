@@ -5,9 +5,82 @@
 }
 
 .dashboard-header {
-  text-align: center;
   color: #ffffff;
   margin-bottom: 3rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-content > div:first-child {
+  text-align: center;
+  flex: 1;
+  min-width: 300px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.user-name {
+  color: #a0a0a0;
+  font-size: 0.95rem;
+}
+
+.btn-logout {
+  background: #3a3a3a;
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-logout:hover {
+  background: #4a4a4a;
+}
+
+.btn-logout:focus {
+  outline: 3px solid rgba(111, 179, 34, 0.5);
+  outline-offset: 2px;
+}
+
+.dashboard-message {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  font-size: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+.dashboard-message.success-message {
+  background-color: rgba(111, 179, 34, 0.15);
+  color: #6fb322;
+  border: 1px solid rgba(111, 179, 34, 0.3);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dashboard-header h1 {
